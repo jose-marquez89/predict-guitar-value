@@ -12,6 +12,20 @@ logging.basicConfig(level=logging.DEBUG,
                     format="%(asctime)s - %(levelname)s - %(message)s")
 
 guitarCsv = open('guitars.csv', 'w')
+writer = csv.writer()
+
+# Write initial columns for csv
+columns = ('Accessories', 'Body Color', 'Body Material', 'Body Type', 'Brand', 
+           'Bundle Description', 'Color', 'Condition', 'Country of Manufacture', 
+           'Country/Region of Manufacture', 'Custom Bundle', 'Dexterity', 
+           'Features', 'Fingerboard', 'Hand', 'Items Included', 'MPN', 'Model', 
+           'Model Year', 'Modification Description', 'Modified Item', 'Neck', 
+           'Non-Domestic Product', 'Pickup', 'Product Line', 'Product Type', 
+           'Right-/ Left-Handed', 'Serial Number', 'Series', 'Size', 
+           'Soundboard Style', 'String Configuration', 'Style', 'Type', 'UPC', 
+           'serial number', 'Price')
+writer.writerow(columns)
+
 threadList = []
 # Main page with filters for 6, 7, 8, 9 and 12 string guitars
 mainUrl = "https://www.ebay.com/sch/i.html?_fsrp=1&_sop=13&_nkw="\
@@ -26,12 +40,28 @@ def writeItemInfo(targetCsv, itemHref):
 	arranges item details sequentially and 
 	writes a row to the target csv file'''
 
-	
+  item = requests.get(itemHref)
+  
+  threadWriter = csv.writer(targetCsv)
+
 
 	# Parse item page HTML
 	itemSoup = BeautifulSoup(item.text)
-    
-    # Item details to populate, some will be empty
+
+  # Select table with item details
+  infoBox = itemSoup.select('.section')
+
+  if len(infoBox) == 0:
+    logging.info(f"Unwanted Link: {itemHref}")
+    return None
+
+  # Parse HTML in attribute table
+  tableSoup = BeautifulSoup(str(infoBox[0]))
+
+  # Get all attribute elements
+  allDetails = tableSoup.select('td')
+
+  # Item details to populate, some will be empty
 	details = {'Accessories': '', 'Body Color': '', 'Body Material': '',
                'Body Type': '', 'Brand': '', 'Bundle Description': '',
                'Color': '', 'Condition': '', 'Country of Manufacture': '',
@@ -45,13 +75,15 @@ def writeItemInfo(targetCsv, itemHref):
                'Size': '', 'Soundboard Style': '', 
                'String Configuration': '', 'Style': '','Type': '', 'UPC': '',
                'serial number': '', 'Price': ''}
-	current = None
-	skip = 0
-	saved = 0
-	for e in test:
-  		listItem = e.getText().strip().strip(':')
-  		attributes.append(listItem)
+	
+  # Set current item attribute
+  current = None
   
+  # Get details into detail dictionary
+	for element in allDetails:
+  		listItem = element.getText().strip().strip(':')
+  
+    # Set special conditions when "Condition" is absent
   	if listItem.lower().startswith('used'): 
     	myDict['Condition'] = listItem[:4].title()
   	elif listItem.lower().startswith('new'):
@@ -59,13 +91,16 @@ def writeItemInfo(targetCsv, itemHref):
   	elif listItem.startswith('“'):
     	continue
   	else:
+      # Set attribute labels that match details as current label
     	if listItem in myDict.keys():
       		current = listItem
       		continue
+      # If label exists, set value in detail dictionary
     	if current != None:
       		myDict[current] = listItem
       		saved += 1
       		current = None
+    # Skip attribute detail if attribute not in detail dictionary
     else:
       continue
 	
@@ -74,11 +109,7 @@ def writeItemInfo(targetCsv, itemHref):
 	price = float(re.sub(r'[^0-9\.]', '', rawPrice))
 	details['Price'] = price
 
-	# TODO: Identify unwanted links
-	# TODO: Extract desired link from unwanted page
-	# TODO: Get main specification table
-	# TODO: Store Specifications in "itemDetails"
-	# TODO: Write a csv row to the target file
+	
 
 
 # Get main page with pre-selected filters
@@ -94,6 +125,17 @@ mainSoup = BeautifulSoup(mainPage.text)
 # Select item links on page
 itemLinks = mainSoup.select('.s-item__link')
 logging.info(f"Item links on page: {len(itemLinks)}")
+
+for itemLink in itemLinks:
+  threadObj = threading.Thread(target=writeItemInfo, 
+                               args=(guitarCsv, itemLink.get('href')))
+  threadList.append(threadObj)
+  threadObj.start()
+
+# Wait for all threads to end
+for thread in threadList:
+  thread.join()
+logging.info("Process Complete.")
 
 
 ############ FOR 100 RESULTS #######################
