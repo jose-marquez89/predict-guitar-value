@@ -2,7 +2,11 @@
 # electric guitar listings. Uses multi threading to get 100 links per page
 
 from bs4 import BeautifulSoup
-import requests, logging, threading, csv
+import requests 
+import logging
+import threading
+import csv
+import re
 
 logging.basicConfig(level=logging.DEBUG,
                     format="%(asctime)s - %(levelname)s - %(message)s")
@@ -21,37 +25,54 @@ def writeItemInfo(targetCsv, itemHref):
 	Function opens individual item links, 
 	arranges item details sequentially and 
 	writes a row to the target csv file'''
-    
-    # TODO: Figure out how to reliably fill this attribute thing
-	attributes = {'Accessories': '', 'Body Color': '', 'Body Material': '',
-                  'Body Type': '', 'Brand': '', 'Bundle Description': '',
-                  'Color': '', 'Condition': '', 'Country of Manufacture': '',
-                  'Country/Region of Manufacture': '', 'Custom Bundle': '', 
-                  'Dexterity': '', 'Features': '', 'Fingerboard': '',
-                  'Hand': '', 'Items Included': '', 'MPN': '', 'Model': '',
-                  'Model Year': '', 'Modification Description': '',
-                  'Modified Item': '', 'Neck': '', 'Non-Domestic Product': '',
-                  'Pickup': '', 'Product Line': '', 'Product Type': '', 
-                  'Right-/ Left-Handed': '', 'Serial Number': '', 'Series': '',
-                  'Size': '', 'Soundboard Style': '', 
-                  'String Configuration': '', 'Style': '','Type': '', 'UPC': '',
-                  'serial number': ''}
+
 	
-	# Get item page
-	item = requests.get(itemHref)
-	try:
-		item.raise_for_status()
-	except Exception as err:
-		logging.error(err)
 
 	# Parse item page HTML
 	itemSoup = BeautifulSoup(item.text)
-
-	# Item details from HTML
-	itemDetails = {"price": ""}
-
-	# Details that need to be individually extracted
-	price = itemSoup.select('.cc-text-spans--BOLD')
+    
+    # Item details to populate, some will be empty
+	details = {'Accessories': '', 'Body Color': '', 'Body Material': '',
+               'Body Type': '', 'Brand': '', 'Bundle Description': '',
+               'Color': '', 'Condition': '', 'Country of Manufacture': '',
+               'Country/Region of Manufacture': '', 'Custom Bundle': '', 
+               'Dexterity': '', 'Features': '', 'Fingerboard': '',
+               'Hand': '', 'Items Included': '', 'MPN': '', 'Model': '',
+               'Model Year': '', 'Modification Description': '',
+               'Modified Item': '', 'Neck': '', 'Non-Domestic Product': '',
+               'Pickup': '', 'Product Line': '', 'Product Type': '', 
+               'Right-/ Left-Handed': '', 'Serial Number': '', 'Series': '',
+               'Size': '', 'Soundboard Style': '', 
+               'String Configuration': '', 'Style': '','Type': '', 'UPC': '',
+               'serial number': '', 'Price': ''}
+	current = None
+	skip = 0
+	saved = 0
+	for e in test:
+  		listItem = e.getText().strip().strip(':')
+  		attributes.append(listItem)
+  
+  	if listItem.lower().startswith('used'): 
+    	myDict['Condition'] = listItem[:4].title()
+  	elif listItem.lower().startswith('new'):
+    	myDict['Condition'] = listItem[:3].title()
+  	elif listItem.startswith('“'):
+    	continue
+  	else:
+    	if listItem in myDict.keys():
+      		current = listItem
+      		continue
+    	if current != None:
+      		myDict[current] = listItem
+      		saved += 1
+      		current = None
+    else:
+      continue
+	
+	# Get item price as float
+	rawPrice = itemSoup.select('.notranslate')[0].getText()
+	price = float(re.sub(r'[^0-9\.]', '', rawPrice))
+	details['Price'] = price
 
 	# TODO: Identify unwanted links
 	# TODO: Extract desired link from unwanted page
