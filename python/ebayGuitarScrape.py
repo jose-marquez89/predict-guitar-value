@@ -21,7 +21,22 @@ def writeItemInfo(targetCsv, itemHref):
 	Function opens individual item links, 
 	arranges item details sequentially and 
 	writes a row to the target csv file'''
-
+    
+    # TODO: Figure out how to reliably fill this attribute thing
+	attributes = {'Accessories': '', 'Body Color': '', 'Body Material': '',
+                  'Body Type': '', 'Brand': '', 'Bundle Description': '',
+                  'Color': '', 'Condition': '', 'Country of Manufacture': '',
+                  'Country/Region of Manufacture': '', 'Custom Bundle': '', 
+                  'Dexterity': '', 'Features': '', 'Fingerboard': '',
+                  'Hand': '', 'Items Included': '', 'MPN': '', 'Model': '',
+                  'Model Year': '', 'Modification Description': '',
+                  'Modified Item': '', 'Neck': '', 'Non-Domestic Product': '',
+                  'Pickup': '', 'Product Line': '', 'Product Type': '', 
+                  'Right-/ Left-Handed': '', 'Serial Number': '', 'Series': '',
+                  'Size': '', 'Soundboard Style': '', 
+                  'String Configuration': '', 'Style': '','Type': '', 'UPC': '',
+                  'serial number': ''}
+	
 	# Get item page
 	item = requests.get(itemHref)
 	try:
