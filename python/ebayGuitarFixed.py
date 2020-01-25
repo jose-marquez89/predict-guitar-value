@@ -7,13 +7,12 @@ import logging
 import threading
 import csv
 import re
-import time
 
 logging.basicConfig(level=logging.DEBUG,
                     format="%(asctime)s - %(levelname)s - %(message)s")
 
 guitarCsv = open('guitars.csv', 'w')
-writer = csv.writer(guitarCsv)
+writer = csv.writer()
 
 # Write initial columns for csv
 columns = ('Accessories', 'Body Color', 'Body Material', 'Body Type', 'Brand', 
@@ -27,7 +26,7 @@ columns = ('Accessories', 'Body Color', 'Body Material', 'Body Type', 'Brand',
            'serial number', 'Price')
 writer.writerow(columns)
 
-
+threadList = []
 # Main page with filters for 6, 7, 8, 9 and 12 string guitars
 mainUrl = "https://www.ebay.com/sch/i.html?_fsrp=1&_sop=13&_nkw="\
           "electric+guitar&_sacat=3858&LH_Complete=1&LH_Sold=1&Size="\
@@ -86,34 +85,29 @@ def writeItemInfo(targetCsv, itemHref):
   
         # Set special conditions when "Condition" is absent
         if listItem.lower().startswith('used'): 
-            details['Condition'] = listItem[:4].title()
+            myDict['Condition'] = listItem[:4].title()
         elif listItem.lower().startswith('new'):
-            details['Condition'] = listItem[:3].title()
+            myDict['Condition'] = listItem[:3].title()
         elif listItem.startswith('“'):
             continue
         else:
-        # Set attribute labels that match details as current label
-            if listItem in details.keys():
+            # Set attribute labels that match details as current label
+            if listItem in myDict.keys():
                 current = listItem
                 continue
-        # If label exists, set value in detail dictionary
+            # If label exists, set value in detail dictionary
             if current != None:
-                details[current] = listItem
+                myDict[current] = listItem
+                saved += 1
                 current = None
             # Skip attribute detail if attribute not in detail dictionary
             else:
                 continue
   
-    # Get item price as float
-    try:
+        # Get item price as float
         rawPrice = itemSoup.select('.notranslate')[0].getText()
         price = float(re.sub(r'[^0-9\.]', '', rawPrice))
         details['Price'] = price
-    except IndexError:
-        logging.error(f"Index Error:{itemHref}")
-        return None
-
-    threadWriter.writerow(list(details.values()))
 
   
 
@@ -124,25 +118,11 @@ try:
     mainPage.raise_for_status
 except Exeption as err:
     logging.error(err)
-    print("An exception occurred. Exiting scraper.")
-    exit()
 
 # Parse HTML on main page
 mainSoup = BeautifulSoup(mainPage.text)
 
-# Get number of results on page
-boldPageElements = mainSoup.select(".BOLD")
-resultCount = int(boldPageElements[16].getText().replace(',', ''))
-
-# Determine pages to visit
-pagesToVisit = resultCount // 100
-
-# Lists of threads to join
-threadList = []
-threadList2 = []
-
-
-# Select item links on main page
+# Select item links on page
 itemLinks = mainSoup.select('.s-item__link')
 logging.info(f"Item links on page: {len(itemLinks)}")
 
@@ -155,39 +135,20 @@ for itemLink in itemLinks:
 # Wait for all threads to end
 for thread in threadList:
     thread.join()   
-
-pageNav1 = mainSoup.select('.x-pagination__control')
-nextPageUrl = pageNav[1].get('href')
-
-# Repeat the process by "pagesToVisit" (may need to use time.sleep())
-for pageNumber in range(2, (pagesToVisit + 2)):
-  time.sleep(10)
-
-  nextPage = requests.get(nextPageUrl)
-  try:
-    nextPage.raise_for_status()
-  except Exeption as err:
-    logging.error(err)
-
-  nextSoup = BeautifulSoup(nextPage.text)
-  itemLinks = nextSoup.select('.s-item__link')
-
-  for itemLink in itemLinks:
-    threadObj = threading.Thread(target=writeItemInfo,
-                                 args=(guitarCsv, itemLink.get('href')))
-    threadList2.append(threadObj)
-    threadObj.start()
-
-  # Wait for 100 threads to finish
-  for thread in threadList2:
-    thread.join()
-
-  # Reset threadList
-  threadList2 = []
-
-  # Reset pageNav
-  pageNav2 = nextSoup.select('.x-pagination__control')
-  nextPageUrl = pageNav2[1].get('href')
-
-guitarCsv.close()
 logging.info("Process Complete.")
+
+
+############ FOR 100 RESULTS #######################
+# TODO: Start 100 threads for the current page     #
+# TODO: Wait for all threads to end                # 
+# TODO: Close csv file                             #
+####################################################
+
+############ FOR ALL RESULTS #######################
+# TODO: Find number of results                     #
+# TODO: Calculate number of pages to visit         # 
+# TODO: Start 100 threads for each of 100 pages    #
+# TODO: Wait for 1000 threads to finish and repeat #
+# TODO: When jobs == results, stop and close csv   # 
+####################################################
+
