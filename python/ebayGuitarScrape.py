@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 # ebayGuitarScrape.py - Scrapes data from ebay.com on sold and completed 
 # electric guitar listings. Uses multi threading to get 100 links per page
 
@@ -157,7 +158,7 @@ for thread in threadList:
     thread.join()   
 
 pageNav1 = mainSoup.select('.x-pagination__control')
-nextPageUrl = pageNav[1].get('href')
+nextPageUrl = pageNav1[1].get('href')
 
 # Repeat the process by "pagesToVisit" (may need to use time.sleep())
 for pageNumber in range(2, (pagesToVisit + 2)):
@@ -166,7 +167,7 @@ for pageNumber in range(2, (pagesToVisit + 2)):
   nextPage = requests.get(nextPageUrl)
   try:
     nextPage.raise_for_status()
-  except Exeption as err:
+  except Exception as err:
     logging.error(err)
 
   nextSoup = BeautifulSoup(nextPage.text)
