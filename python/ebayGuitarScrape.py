@@ -12,6 +12,7 @@ import time
 
 logging.basicConfig(level=logging.DEBUG,
                     format="%(asctime)s - %(levelname)s - %(message)s")
+# logging.disable(logging.DEBUG)
 
 guitarCsv = open('guitars.csv', 'w')
 writer = csv.writer(guitarCsv)
