@@ -11,6 +11,10 @@ dash-bootstrap-components = "*"
 gunicorn = "*"
 plotly = "*"
 pandas = "*"
+joblib = "*"
+sklearn = "*"
+category-encoders = "*"
+xgboost = "*"
 
 [requires]
 python_version = "3"

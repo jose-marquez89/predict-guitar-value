@@ -5,6 +5,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import pandas as pd
+from joblib import load
+import numpy as np
 # Imports from this application
 from app import app
 
@@ -22,6 +24,7 @@ available_countries = sorted(df['Country/Region of Manufacture'].unique())
 available_sconfigs = sorted(df['String Configuration'].unique())
 available_plines = sorted(df['Product Line'].unique())
 orientations = df['Orientation'].unique()
+conditions = df['Condition'].unique()
 
 style = {'padding': '1.5em'}
 
@@ -130,17 +133,36 @@ column2 = dbc.Col([
 					{'label': i, 'value': i} for i in orientations]
 			)
 		]),
-		# html.Div([
-			# dcc.Markdown("##### Select Orientation"),
-			# dcc.RadioItems(
-				# id='right-or-left',
-				# options=[
-					# {'label': i, 'value': i} for i in ['LEFT-HANDED',
-													   # 'RIGHT-HANDED',
-													   # 'BOTH']],
-		        # value='RIGHT-HANDED',
-		    # )
-		# ]),
+		html.Div([
+			dcc.Markdown("##### Select Condition"),
+			dcc.Dropdown(
+				id='condition-dd', 
+				options=[
+					{'label': i, 'value': i} for i in conditions]
+			)
+		]),
+		html.Div([
+			dcc.Markdown("##### I Know My Guitar's Manufacturer Part Number:"),
+			dcc.RadioItems(
+				id='mpn-radio',
+				options=[
+					{'label': 'Yes', 'value': 'PROVIDED'},
+					{'label': 'No', 'value': 'NOT PROVIDED'}],
+		        value='NOT PROVIDED',
+		        labelStyle={'display': 'inline-block'}
+		    )
+		]),
+		html.Div([
+			dcc.Markdown("##### I Know My Guitar's UPC:"),
+			dcc.RadioItems(
+				id='upc-radio',
+				options=[
+					{'label': 'Yes', 'value': 'PROVIDED'},
+					{'label': 'No', 'value': 'NOT PROVIDED'}],
+		        value='NOT PROVIDED',
+		        labelStyle={'display': 'inline-block'}
+		    )
+		]),
 													   
 	],
 	md=3
@@ -151,12 +173,48 @@ column3 = dbc.Col([
 			id='year-slide',
 			min=1940,
 			max=2020,
-			step=10,
+			step=2,
 			value=2020,
 			marks={n: f'{n:.0f}'for n in range(1940,2040,10)}
-		)
+		),
+		html.Div(id='prediction-content', style={'fontWeight':'bold'}),
 	], 
 	md=6
 )
+@app.callback(
+	Output('prediction-content', 'children'),
+	[Input('brand-dd', 'value'),
+	 Input('model-dd', 'value'),
+	 Input('color-dd', 'value'),
+	 Input('material-dd', 'value'),
+	 Input('btype-dd', 'value'),
+	 Input('sizes-dd', 'value'),
+	 Input('country-dd', 'value'),
+	 Input('strings-dd', 'value'),
+	 Input('pline-dd', 'value'),
+	 Input('orient-dd', 'value'),
+	 Input('year-slide', 'value'),
+	 Input('condition-dd', 'value'),
+	 Input('upc-radio', 'value'),
+	 Input('mpn-radio', 'value')])
+def predict(
+		brand, model, color, material, btype,
+		sizes, country, strings, pline, orient,
+		year, condition, upc, mpn):
+	pred_df = pd.DataFrame(
+		columns=['Model', 'MPN', 'Body Color', 'Brand', 'UPC',
+				 'Body Material', 'Body Type', 'Model Year',
+				 'Size', 'Country/Region of Manufacture', 
+				 'String Configuration', 'Orientation', 'Product Line',
+				 'Condition'],
+		data=[[model, mpn, color, brand, upc, material, btype, year,
+			   sizes, country, strings, orient, pline, condition]]
+	)
+	
+	pipeline = load('model/pipeline.joblib')
+	y_pred_log = pipeline.predict(pred_df)
+	y_pred = np.expm1(y_pred_log)[0]
+	
+	return f"This guitar could sell for ${y_pred:,.2f}"
 
 layout = dbc.Row([column1, column2, column3])
