@@ -15,6 +15,7 @@ joblib = "*"
 sklearn = "*"
 category-encoders = "*"
 xgboost = "*"
+shap = "*"
 
 [requires]
 python_version = "3"

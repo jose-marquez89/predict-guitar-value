@@ -17,11 +17,7 @@ column1 = dbc.Col(
         
             ## Process
             
-            Here, you should explain a bit about your process, and maybe
-            include some of the code from the notebooks. I really like the 
-            app with the book reviews. I was simple and to the point, but you
-            need to decide whether or not you want to have a more "visual" 
-            process explanation, rather than a bunch of code.
+            😵 Under Construction
 
 
             """

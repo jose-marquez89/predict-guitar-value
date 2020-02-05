@@ -11,7 +11,7 @@ from pages import index, predictions, insights, process
 
 # Navbar docs: https://dash-bootstrap-components.opensource.faculty.ai/l/components/navbar
 navbar = dbc.NavbarSimple(
-    brand="What's The eBay Resale Price?",
+    brand='eBay Guitar Resale Predictor',
     brand_href='/', 
     children=[
         dbc.NavItem(dcc.Link('Predictions', href='/predictions', className='nav-link')), 
@@ -19,9 +19,9 @@ navbar = dbc.NavbarSimple(
         dbc.NavItem(dcc.Link('How Does It Work?', href='/process', className='nav-link'))
     ],
     sticky='top',
-    color='#85B716', 
-    light=True,
-    dark=False
+    color='primary', 
+    dark=True,
+    # brand_external_link=True
 )
 
 # Footer docs:
